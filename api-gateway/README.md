@@ -1,7 +1,8 @@
 # API Gateway
 
-The frontend-facing entry point. It serves `GET /health` for its own liveness
-check and forwards `GET /api/health` to the health service.
+The single entry point for backend APIs. Frontend API traffic reaches this
+service through Nginx. It serves `GET /health` for its own liveness check and
+forwards `GET /api/health` to the health service.
 
 ## Local development
 

@@ -1,36 +1,33 @@
 # Hexora Application Stack
 
-The backend is organized as independently buildable Node.js/TypeScript services.
-Nginx serves the frontend and routes API requests to the API gateway.
+The backend contains the API gateway and health service as independently
+buildable Node.js/TypeScript projects. Docker and Nginx configuration lives at
+the backend root.
 
 ## Run with Docker Compose
 
-Requires Docker Compose. Run this command from the `hexora-backend` folder:
+Requires Docker Compose. Run this command from `hexora-backend`:
 
 ```sh
 docker compose up --build
 ```
 
-Open `http://localhost:8080` for the frontend. Requests to `/api/` are proxied
-by Nginx to the API gateway. `GET /api/health` checks the health service through
-the gateway. The gateway and health service stay on the internal Compose
-network.
-
-Set `WEB_PORT` to change the published web port. If you change it, also set
-`FRONTEND_ORIGIN` to the corresponding origin for the gateway's CORS policy.
+Open `http://localhost:8080`. Nginx builds and serves the frontend, and is the
+only service exposed to the host. It routes all `/api/` requests to the API
+gateway; backend services stay on the internal Compose network.
 
 ## Run locally
 
 Requires Node.js 20.6 or newer and npm. In separate terminals:
 
 ```sh
-cd services/health-service
+cd health-service
 npm install
 npm run dev
 ```
 
 ```sh
-cd services/api-gateway
+cd api-gateway
 npm install
 npm run dev
 ```
@@ -38,10 +35,10 @@ npm run dev
 ## Services
 
 - `nginx` builds the Vite app from `hexora-frontend`, serves its static files,
-  provides SPA route fallback, and proxies `/api/` to the gateway.
-- `services/api-gateway` is the frontend-facing API entry point and forwards
+  using `Dockerfile.nginx` and `nginx.conf`, and proxies `/api/` to the gateway.
+- `api-gateway` is the single entry point for backend APIs and forwards
   health checks to the health service.
-- `services/health-service` exposes its internal `GET /health` endpoint.
+- `health-service` exposes its internal `GET /health` endpoint.
 
 Each service has its own package manifest, TypeScript config, environment
-example, and Dockerfile. See each service README for its local configuration.
+example, and Dockerfile. See the service READMEs for local configuration.
