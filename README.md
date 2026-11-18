@@ -48,5 +48,10 @@ npm run dev
   for development. It uses plaintext listeners and should be secured and
   clustered appropriately before production use.
 
+Kafka topic data and consumer offsets are stored in the Docker volume
+`hexora_kafka-data`, so they survive container restarts and the regular
+`docker compose down` command. Avoid `docker compose down -v` unless you
+intend to delete that data.
+
 Each service has its own package manifest, TypeScript config, environment
 example, and Dockerfile. See the service READMEs for local configuration.
