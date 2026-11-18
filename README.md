@@ -1,33 +1,44 @@
-# Hexora Backend
+# Hexora Application Stack
 
-TypeScript REST API built with Express.
+The backend contains the API gateway and health service as independently
+buildable Node.js/TypeScript projects. Docker and Nginx configuration lives at
+the backend root.
 
-## Requirements
+## Run with Docker Compose
 
-- Node.js 20.6 or newer
-- npm
-
-## Getting started
+Requires Docker Compose. Run this command from `hexora-backend`:
 
 ```sh
+docker compose up --build
+```
+
+Open `http://localhost:8080`. Nginx builds and serves the frontend, and is the
+only service exposed to the host. It routes all `/api/` requests to the API
+gateway; backend services stay on the internal Compose network.
+
+## Run locally
+
+Requires Node.js 20.6 or newer and npm. In separate terminals:
+
+```sh
+cd health-service
 npm install
-cp .env.example .env
 npm run dev
 ```
 
-The API listens on `http://localhost:3000` by default. Check `GET /api/health`
-to verify it is running.
+```sh
+cd api-gateway
+npm install
+npm run dev
+```
 
-## Scripts
+## Services
 
-- `npm run dev` starts the API with watch mode.
-- `npm run build` type-checks and compiles the API to `dist/`.
-- `npm start` starts the compiled API.
-- `npm run lint` checks the TypeScript source.
+- `nginx` builds the Vite app from `hexora-frontend`, serves its static files,
+  using `Dockerfile.nginx` and `nginx.conf`, and proxies `/api/` to the gateway.
+- `api-gateway` is the single entry point for backend APIs and forwards
+  health checks to the health service.
+- `health-service` exposes its internal `GET /health` endpoint.
 
-## Configuration
-
-- `PORT` sets the listening port (default `3000`).
-- `HOST` sets the listening host (default `0.0.0.0`).
-- `FRONTEND_ORIGIN` sets the frontend origin allowed by CORS (default
-  `http://localhost:5173`).
+Each service has its own package manifest, TypeScript config, environment
+example, and Dockerfile. See the service READMEs for local configuration.
