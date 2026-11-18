@@ -35,9 +35,9 @@ services:
         - CMD-SHELL
         - /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   kafka-init:
@@ -130,3 +130,4 @@ services:
 
 volumes:
   kafka-data:
+    name: hexora_kafka-data
