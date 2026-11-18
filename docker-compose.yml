@@ -1,0 +1,63 @@
+name: hexora
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 10s
+  timeout: 3s
+  retries: 5
+  start_period: 5s
+
+services:
+  health-service:
+    build:
+      context: ./health-service
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+    healthcheck:
+      <<: *healthcheck-defaults
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    depends_on:
+      health-service:
+        condition: service_healthy
+    environment:
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
+      HEALTH_SERVICE_URL: http://health-service:3001
+      HOST: 0.0.0.0
+      PORT: 3000
+    healthcheck:
+      <<: *healthcheck-defaults
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: hexora-backend/Dockerfile.nginx
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://127.0.0.1/health
+    restart: unless-stopped
