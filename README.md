@@ -13,8 +13,9 @@ docker compose up --build
 ```
 
 Open `http://localhost:8080`. Nginx builds and serves the frontend, and is the
-only service exposed to the host. It routes all `/api/` requests to the API
-gateway; backend services stay on the internal Compose network.
+only application service exposed to the host. It routes all `/api/` requests
+to the API gateway. Kafka is available on host port `9094` for local tools and
+on `kafka:9092` to services inside the Compose network.
 
 ## Run locally
 
@@ -37,8 +38,15 @@ npm run dev
 - `nginx` builds the Vite app from `hexora-frontend`, serves its static files,
   using `Dockerfile.nginx` and `nginx.conf`, and proxies `/api/` to the gateway.
 - `api-gateway` is the single entry point for backend APIs and forwards
-  health checks to the health service.
-- `health-service` exposes its internal `GET /health` endpoint.
+  health checks to the health service. It publishes validated events at
+  `POST /api/events`.
+- `health-service` exposes its internal `GET /health` endpoint and consumes
+  events from Kafka's `hexora.events` topic.
+- `kafka-init` creates the configured event topic before either backend
+  service starts, using the `kafka.init` script.
+- `kafka` is a single-node KRaft broker with persistent local data, configured
+  for development. It uses plaintext listeners and should be secured and
+  clustered appropriately before production use.
 
 Each service has its own package manifest, TypeScript config, environment
 example, and Dockerfile. See the service READMEs for local configuration.

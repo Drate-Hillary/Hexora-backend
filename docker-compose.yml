@@ -7,11 +7,65 @@ x-healthcheck-defaults: &healthcheck-defaults
   start_period: 5s
 
 services:
+  kafka:
+    image: apache/kafka:4.0.0
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "${KAFKA_PORT:-9094}:9094"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:4.0.0
+    entrypoint:
+      - /bin/sh
+      - /kafka.init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: hexora.events
+      KAFKA_TOPIC_PARTITIONS: 3
+      KAFKA_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./kafka.init:/kafka.init:ro
+    restart: "no"
+
   health-service:
     build:
       context: ./health-service
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
     environment:
       HOST: 0.0.0.0
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: hexora.events
       PORT: 3001
     healthcheck:
       <<: *healthcheck-defaults
@@ -26,12 +80,16 @@ services:
     build:
       context: ./api-gateway
     depends_on:
+      kafka-init:
+        condition: service_completed_successfully
       health-service:
         condition: service_healthy
     environment:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
       HEALTH_SERVICE_URL: http://health-service:3001
       HOST: 0.0.0.0
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: hexora.events
       PORT: 3000
     healthcheck:
       <<: *healthcheck-defaults
@@ -61,3 +119,6 @@ services:
         - --spider
         - http://127.0.0.1/health
     restart: unless-stopped
+
+volumes:
+  kafka-data:

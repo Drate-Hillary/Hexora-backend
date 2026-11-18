@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+kafka-topics.sh \
+  --bootstrap-server "${KAFKA_BROKERS:-kafka:9092}" \
+  --create \
+  --if-not-exists \
+  --topic "${KAFKA_TOPIC:-hexora.events}" \
+  --partitions "${KAFKA_TOPIC_PARTITIONS:-3}" \
+  --replication-factor "${KAFKA_TOPIC_REPLICATION_FACTOR:-1}"
