@@ -88,11 +88,8 @@ services:
     depends_on:
       kafka-init:
         condition: service_completed_successfully
-      health-service:
-        condition: service_healthy
     environment:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
-      HEALTH_SERVICE_URL: http://health-service:3001
       HOST: 0.0.0.0
       KAFKA_BROKERS: kafka:9092
       KAFKA_TOPIC: hexora.events

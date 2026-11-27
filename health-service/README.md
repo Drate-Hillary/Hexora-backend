@@ -1,10 +1,9 @@
 # Health Service
 
-An independently runnable service exposing `GET /health`. The API gateway
-proxies its health response at `GET /api/health`. It also consumes events from
-the Kafka topic configured by `KAFKA_TOPIC` (default: `hexora.events`) and logs
-the received event envelope, providing a starting point for event-driven
-service handlers.
+An independently runnable service exposing `GET /health`. It consumes events
+from the Kafka topic configured by `KAFKA_TOPIC` (default: `hexora.events`)
+and logs the received event envelope, providing a starting point for
+event-driven service handlers. It has no HTTP dependency on the API gateway.
 
 ## Local development
 

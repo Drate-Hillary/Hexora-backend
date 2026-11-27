@@ -4,8 +4,6 @@ import { randomUUID } from 'node:crypto'
 import { publishEvent } from './kafka.js'
 
 const app = express()
-const healthServiceUrl =
-  process.env.HEALTH_SERVICE_URL ?? 'http://localhost:3001'
 
 app.use(express.json({ limit: '1mb' }))
 app.use(
@@ -14,28 +12,12 @@ app.use(
   }),
 )
 
-app.get('/health', (_request, response) => {
+const healthCheck = (_request: express.Request, response: express.Response) => {
   response.json({ status: 'ok', service: 'api-gateway' })
-})
+}
 
-app.get('/api/health', async (_request, response) => {
-  try {
-    const upstream = await fetch(`${healthServiceUrl}/health`, {
-      signal: AbortSignal.timeout(5000),
-    })
-    const body = await upstream.text()
-    const contentType = upstream.headers.get('content-type')
-
-    if (contentType) {
-      response.setHeader('content-type', contentType)
-    }
-
-    response.status(upstream.status).send(body)
-  } catch (error) {
-    console.error('Health service request failed', error)
-    response.status(503).json({ error: 'Health service unavailable' })
-  }
-})
+app.get('/health', healthCheck)
+app.get('/api/health', healthCheck)
 
 app.post('/api/events', async (request, response) => {
   const { eventType, payload } = request.body ?? {}
